@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import ScoreInput from "./ScoreInput";
 
@@ -10,12 +10,33 @@ interface Score {
 }
 
 const App: React.FC = () => {
-  const [scores, setScores] = useState<Score[]>([]);
-  const [totalTeam1, setTotalTeam1] = useState<number>(0);
-  const [totalTeam2, setTotalTeam2] = useState<number>(0);
+  const [scores, setScores] = useState<Score[]>(() => {
+    const savedScores = localStorage.getItem("molkkyScores");
+    return savedScores ? JSON.parse(savedScores) : [];
+  });
+  const [totalTeam1, setTotalTeam1] = useState<number>(() => {
+    const savedTotal1 = localStorage.getItem("totalTeam1");
+    return savedTotal1 ? parseInt(savedTotal1) : 0;
+  });
+  const [totalTeam2, setTotalTeam2] = useState<number>(() => {
+    const savedTotal2 = localStorage.getItem("totalTeam2");
+    return savedTotal2 ? parseInt(savedTotal2) : 0;
+  });
   const [zeroCountTeam1, setZeroCountTeam1] = useState<number>(0);
   const [zeroCountTeam2, setZeroCountTeam2] = useState<number>(0);
-  const [winner, setWinner] = useState<string | null>(null);
+  const [winner, setWinner] = useState<string | null>(() => {
+    const savedWinner = localStorage.getItem("winner");
+    return savedWinner ? savedWinner : null;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("molkkyScores", JSON.stringify(scores));
+    localStorage.setItem("totalTeam1", totalTeam1.toString());
+    localStorage.setItem("totalTeam2", totalTeam2.toString());
+    if (winner) {
+      localStorage.setItem("winner", winner);
+    }
+  }, [scores, totalTeam1, totalTeam2, winner]);
 
   const addScores = (pointsTeam1: number, pointsTeam2: number) => {
     if (winner) return; // Si une équipe a déjà gagné, on ne permet pas d'ajouter de nouveaux scores.
@@ -102,6 +123,16 @@ const App: React.FC = () => {
     link.click();
   };
 
+  const resetGame = () => {
+    setScores([]);
+    setTotalTeam1(0);
+    setTotalTeam2(0);
+    setZeroCountTeam1(0);
+    setZeroCountTeam2(0);
+    setWinner(null);
+    localStorage.clear(); // Efface le stockage local
+  };
+
   return (
     <div className="App">
       <h1>Compteur de points Mölkky</h1>
@@ -145,6 +176,9 @@ const App: React.FC = () => {
       )}
 
       <button onClick={exportCSV}>Exporter en CSV</button>
+      <button onClick={resetGame} style={{ marginLeft: "10px" }}>
+        Réinitialiser le jeu
+      </button>
     </div>
   );
 };
