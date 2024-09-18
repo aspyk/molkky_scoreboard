@@ -31,6 +31,10 @@ const App: React.FC = () => {
     const savedWinner = localStorage.getItem("winner");
     return savedWinner || null;
   });
+  const [tempScores, setTempScores] = useState<number[]>(
+    Array(teamCount).fill(0)
+  );
+  const [displayTotals, setDisplayTotals] = useState<number[]>(totals);
 
   useEffect(() => {
     localStorage.setItem("molkkyTeamCount", teamCount.toString());
@@ -41,6 +45,19 @@ const App: React.FC = () => {
       localStorage.setItem("winner", winner);
     }
   }, [teamCount, scores, totals, zeroCounts, winner]);
+
+  useEffect(() => {
+    const newDisplayTotals = totals.map((total, index) => {
+      const tempTotal = total + tempScores[index];
+      if (tempTotal > 50) return 25;
+      return tempTotal;
+    });
+    setDisplayTotals(newDisplayTotals);
+  }, [tempScores, totals]);
+
+  const handleScoreSelect = (scores: number[]) => {
+    setTempScores(scores);
+  };
 
   const addScores = (points: number[]) => {
     if (winner) return;
@@ -63,6 +80,7 @@ const App: React.FC = () => {
     setTotals(newTotals);
     setZeroCounts(newZeroCounts);
     setScores([...scores, { points, colors: newColors }]);
+    setTempScores(Array(teamCount).fill(0)); // Reset temp scores
 
     const winningTeam = newTotals.findIndex((total) => total === 50);
     if (winningTeam !== -1) {
@@ -141,6 +159,7 @@ const App: React.FC = () => {
     setScores([]);
     setTotals(Array(teamCount).fill(0));
     setZeroCounts(Array(teamCount).fill(0));
+    setTempScores(Array(teamCount).fill(0));
     setWinner(null);
     setGameStarted(false);
     localStorage.clear();
@@ -155,6 +174,7 @@ const App: React.FC = () => {
       setTeamCount(newTeamCount);
       setTotals(Array(newTeamCount).fill(0));
       setZeroCounts(Array(newTeamCount).fill(0));
+      setTempScores(Array(newTeamCount).fill(0));
     }
   };
 
@@ -162,19 +182,21 @@ const App: React.FC = () => {
     <div className="App">
       <h1>Compteur de points Mölkky</h1>
 
-      {!gameStarted && (
-        <div>
-          <label htmlFor="teamCount">Nombre d'équipes : </label>
-          <input
-            type="number"
-            id="teamCount"
-            min="2"
-            max="10"
-            value={teamCount}
-            onChange={handleTeamCountChange}
-          />
-        </div>
-      )}
+      <div style={{ marginBottom: "20px" }}>
+        {!gameStarted && (
+          <div>
+            <label htmlFor="teamCount">Nombre d'équipes : </label>
+            <input
+              type="number"
+              id="teamCount"
+              min="2"
+              max="10"
+              value={teamCount}
+              onChange={handleTeamCountChange}
+            />
+          </div>
+        )}
+      </div>
 
       <table>
         <thead>
@@ -204,12 +226,19 @@ const App: React.FC = () => {
         </tbody>
       </table>
 
-      <ScoreInput onAddScores={addScores} teamCount={teamCount} />
+      <ScoreInput
+        onAddScores={addScores}
+        teamCount={teamCount}
+        onScoreSelect={handleScoreSelect}
+      />
 
       <h2>Scores cumulés :</h2>
-      {totals.map((total, index) => (
+      {displayTotals.map((total, index) => (
         <p key={index}>
           Équipe {index + 1} : <span className="score">{total}</span>
+          {tempScores[index] > 0 && (
+            <span className="tempScore"> (+{tempScores[index]})</span>
+          )}
         </p>
       ))}
 

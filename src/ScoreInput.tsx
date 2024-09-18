@@ -1,17 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ScoreButtons from "./ScoreButtons";
 
 interface ScoreInputProps {
   onAddScores: (points: number[]) => void;
+  onScoreSelect: (points: number[]) => void;
   teamCount: number;
 }
 
-const ScoreInput: React.FC<ScoreInputProps> = ({ onAddScores, teamCount }) => {
+const ScoreInput: React.FC<ScoreInputProps> = ({
+  onAddScores,
+  onScoreSelect,
+  teamCount,
+}) => {
   const [points, setPoints] = useState<(number | null)[]>(
     Array(teamCount).fill(null)
   );
   const [reset, setReset] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  useEffect(() => {
+    onScoreSelect(points.map((p) => p ?? 0));
+  }, [points, onScoreSelect]);
 
   const handleAddScores = () => {
     if (points.some((p) => p === null)) {
