@@ -3,87 +3,91 @@ import "./App.css";
 import ScoreInput from "./ScoreInput";
 
 interface Score {
-  pointsTeam1: number;
-  pointsTeam2: number;
-  colorTeam1: string;
-  colorTeam2: string;
+  points: number[];
+  colors: string[];
 }
 
 const App: React.FC = () => {
+  const [teamCount, setTeamCount] = useState<number>(() => {
+    const savedTeamCount = localStorage.getItem("molkkyTeamCount");
+    return savedTeamCount ? parseInt(savedTeamCount) : 2;
+  });
+  const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [scores, setScores] = useState<Score[]>(() => {
     const savedScores = localStorage.getItem("molkkyScores");
     return savedScores ? JSON.parse(savedScores) : [];
   });
-  const [totalTeam1, setTotalTeam1] = useState<number>(() => {
-    const savedTotal1 = localStorage.getItem("totalTeam1");
-    return savedTotal1 ? parseInt(savedTotal1) : 0;
+  const [totals, setTotals] = useState<number[]>(() => {
+    const savedTotals = localStorage.getItem("molkkyTotals");
+    return savedTotals ? JSON.parse(savedTotals) : Array(teamCount).fill(0);
   });
-  const [totalTeam2, setTotalTeam2] = useState<number>(() => {
-    const savedTotal2 = localStorage.getItem("totalTeam2");
-    return savedTotal2 ? parseInt(savedTotal2) : 0;
+  const [zeroCounts, setZeroCounts] = useState<number[]>(() => {
+    const savedZeroCounts = localStorage.getItem("molkkyZeroCounts");
+    return savedZeroCounts
+      ? JSON.parse(savedZeroCounts)
+      : Array(teamCount).fill(0);
   });
-  const [zeroCountTeam1, setZeroCountTeam1] = useState<number>(0);
-  const [zeroCountTeam2, setZeroCountTeam2] = useState<number>(0);
   const [winner, setWinner] = useState<string | null>(() => {
     const savedWinner = localStorage.getItem("winner");
-    return savedWinner ? savedWinner : null;
+    return savedWinner || null;
   });
 
   useEffect(() => {
+    localStorage.setItem("molkkyTeamCount", teamCount.toString());
     localStorage.setItem("molkkyScores", JSON.stringify(scores));
-    localStorage.setItem("totalTeam1", totalTeam1.toString());
-    localStorage.setItem("totalTeam2", totalTeam2.toString());
+    localStorage.setItem("molkkyTotals", JSON.stringify(totals));
+    localStorage.setItem("molkkyZeroCounts", JSON.stringify(zeroCounts));
     if (winner) {
       localStorage.setItem("winner", winner);
     }
-  }, [scores, totalTeam1, totalTeam2, winner]);
+  }, [teamCount, scores, totals, zeroCounts, winner]);
 
-  const addScores = (pointsTeam1: number, pointsTeam2: number) => {
-    if (winner) return; // Si une équipe a déjà gagné, on ne permet pas d'ajouter de nouveaux scores.
+  const addScores = (points: number[]) => {
+    if (winner) return;
 
-    const { newTotal: newTotalTeam1, color: colorTeam1 } = calculateNewTotal(
-      totalTeam1,
-      pointsTeam1,
-      "Team1"
-    );
-    const { newTotal: newTotalTeam2, color: colorTeam2 } = calculateNewTotal(
-      totalTeam2,
-      pointsTeam2,
-      "Team2"
-    );
+    const newTotals = [...totals];
+    const newColors: string[] = [];
+    const newZeroCounts = [...zeroCounts];
 
-    setTotalTeam1(newTotalTeam1);
-    setTotalTeam2(newTotalTeam2);
+    points.forEach((point, index) => {
+      const { newTotal, color, newZeroCount } = calculateNewTotal(
+        newTotals[index],
+        point,
+        newZeroCounts[index]
+      );
+      newTotals[index] = newTotal;
+      newColors[index] = color;
+      newZeroCounts[index] = newZeroCount;
+    });
 
-    setScores([
-      ...scores,
-      { pointsTeam1, pointsTeam2, colorTeam1, colorTeam2 },
-    ]);
+    setTotals(newTotals);
+    setZeroCounts(newZeroCounts);
+    setScores([...scores, { points, colors: newColors }]);
 
-    if (newTotalTeam1 === 50) {
-      setWinner("Équipe 1");
-    } else if (newTotalTeam2 === 50) {
-      setWinner("Équipe 2");
+    const winningTeam = newTotals.findIndex((total) => total === 50);
+    if (winningTeam !== -1) {
+      setWinner(`Équipe ${winningTeam + 1}`);
     }
+
+    setGameStarted(true);
   };
 
   const calculateNewTotal = (
     total: number,
     points: number,
-    team: "Team1" | "Team2"
+    zeroCount: number
   ) => {
-    let zeroCount = team === "Team1" ? zeroCountTeam1 : zeroCountTeam2;
+    let newZeroCount = zeroCount;
     let color = "";
 
     if (points === 0) {
-      zeroCount++;
+      newZeroCount++;
     } else {
-      zeroCount = 0;
+      newZeroCount = 0;
     }
 
     let newTotal = total + points;
 
-    // Vérification des règles supplémentaires
     if (newTotal > 50) {
       newTotal = 25;
       color = "red";
@@ -91,64 +95,36 @@ const App: React.FC = () => {
       color = "green";
     }
 
-    if (zeroCount >= 3) {
+    if (newZeroCount >= 3) {
       newTotal = newTotal >= 25 ? 25 : 0;
       color = "red";
-      zeroCount = 0;
+      newZeroCount = 0;
     }
 
-    if (team === "Team1") {
-      setZeroCountTeam1(zeroCount);
-    } else {
-      setZeroCountTeam2(zeroCount);
-    }
-
-    return { newTotal, color };
+    return { newTotal, color, newZeroCount };
   };
 
   const exportCSV = () => {
     const headers =
-      "Tour,Points Équipe 1,Points Équipe 2,Cumul Équipe 1,Cumul Équipe 2\n";
-    let cumulativeTeam1 = 0;
-    let cumulativeTeam2 = 0;
-    let zeroCountTeam1 = 0;
-    let zeroCountTeam2 = 0;
+      [
+        "Tour",
+        ...Array(teamCount)
+          .fill(0)
+          .map((_, i) => `Points Équipe ${i + 1}`),
+        ...Array(teamCount)
+          .fill(0)
+          .map((_, i) => `Cumul Équipe ${i + 1}`),
+      ].join(",") + "\n";
 
     const rows = scores
       .map((score, index) => {
-        // Calculer les cumuls pour l'équipe 1
-        if (score.pointsTeam1 === 0) {
-          zeroCountTeam1++;
-        } else {
-          zeroCountTeam1 = 0;
-        }
-        cumulativeTeam1 += score.pointsTeam1;
-        if (cumulativeTeam1 > 50) {
-          cumulativeTeam1 = 25;
-        }
-        if (zeroCountTeam1 >= 3) {
-          cumulativeTeam1 = cumulativeTeam1 >= 25 ? 25 : 0;
-          zeroCountTeam1 = 0;
-        }
+        const cumulatives = totals.map((_, teamIndex) => {
+          return scores
+            .slice(0, index + 1)
+            .reduce((sum, s) => sum + s.points[teamIndex], 0);
+        });
 
-        // Calculer les cumuls pour l'équipe 2
-        if (score.pointsTeam2 === 0) {
-          zeroCountTeam2++;
-        } else {
-          zeroCountTeam2 = 0;
-        }
-        cumulativeTeam2 += score.pointsTeam2;
-        if (cumulativeTeam2 > 50) {
-          cumulativeTeam2 = 25;
-        }
-        if (zeroCountTeam2 >= 3) {
-          cumulativeTeam2 = cumulativeTeam2 >= 25 ? 25 : 0;
-          zeroCountTeam2 = 0;
-        }
-
-        return `${index + 1},${score.pointsTeam1},${
-          score.pointsTeam2
-        },${cumulativeTeam1},${cumulativeTeam2}`;
+        return [index + 1, ...score.points, ...cumulatives].join(",");
       })
       .join("\n");
 
@@ -157,55 +133,85 @@ const App: React.FC = () => {
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "molkky_scores.csv");
-    document.body.appendChild(link); // Requis pour Firefox
+    document.body.appendChild(link);
     link.click();
   };
 
   const resetGame = () => {
     setScores([]);
-    setTotalTeam1(0);
-    setTotalTeam2(0);
-    setZeroCountTeam1(0);
-    setZeroCountTeam2(0);
+    setTotals(Array(teamCount).fill(0));
+    setZeroCounts(Array(teamCount).fill(0));
     setWinner(null);
-    localStorage.clear(); // Efface le stockage local
+    setGameStarted(false);
+    localStorage.clear();
+  };
+
+  const handleTeamCountChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newTeamCount = parseInt(event.target.value);
+    if (newTeamCount >= 2 && newTeamCount <= 10) {
+      // Limiter à un maximum raisonnable, par exemple 10
+      setTeamCount(newTeamCount);
+      setTotals(Array(newTeamCount).fill(0));
+      setZeroCounts(Array(newTeamCount).fill(0));
+    }
   };
 
   return (
     <div className="App">
       <h1>Compteur de points Mölkky</h1>
+
+      {!gameStarted && (
+        <div>
+          <label htmlFor="teamCount">Nombre d'équipes : </label>
+          <input
+            type="number"
+            id="teamCount"
+            min="2"
+            max="10"
+            value={teamCount}
+            onChange={handleTeamCountChange}
+          />
+        </div>
+      )}
+
       <table>
         <thead>
           <tr>
             <th>Tour</th>
-            <th>Points Équipe 1</th>
-            <th>Points Équipe 2</th>
+            {Array(teamCount)
+              .fill(0)
+              .map((_, i) => (
+                <th key={i}>Points Équipe {i + 1}</th>
+              ))}
           </tr>
         </thead>
         <tbody>
           {scores.map((score, index) => (
             <tr key={index}>
               <td>{index + 1}</td>
-              <td style={{ backgroundColor: score.colorTeam1 }}>
-                {score.pointsTeam1}
-              </td>
-              <td style={{ backgroundColor: score.colorTeam2 }}>
-                {score.pointsTeam2}
-              </td>
+              {score.points.map((points, teamIndex) => (
+                <td
+                  key={teamIndex}
+                  style={{ backgroundColor: score.colors[teamIndex] }}
+                >
+                  {points}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
 
-      <ScoreInput onAddScores={addScores} />
+      <ScoreInput onAddScores={addScores} teamCount={teamCount} />
 
       <h2>Scores cumulés :</h2>
-      <p>
-        Équipe 1 : <span className="score">{totalTeam1}</span>
-      </p>
-      <p>
-        Équipe 2 : <span className="score">{totalTeam2}</span>
-      </p>
+      {totals.map((total, index) => (
+        <p key={index}>
+          Équipe {index + 1} : <span className="score">{total}</span>
+        </p>
+      ))}
 
       {winner && (
         <h2 style={{ color: "green" }}>
