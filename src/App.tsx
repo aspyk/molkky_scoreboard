@@ -107,13 +107,51 @@ const App: React.FC = () => {
   };
 
   const exportCSV = () => {
-    const headers = "Tour,Points Équipe 1,Points Équipe 2\n";
+    const headers =
+      "Tour,Points Équipe 1,Points Équipe 2,Cumul Équipe 1,Cumul Équipe 2\n";
+    let cumulativeTeam1 = 0;
+    let cumulativeTeam2 = 0;
+    let zeroCountTeam1 = 0;
+    let zeroCountTeam2 = 0;
+
     const rows = scores
-      .map(
-        (score, index) =>
-          `${index + 1},${score.pointsTeam1},${score.pointsTeam2}`
-      )
+      .map((score, index) => {
+        // Calculer les cumuls pour l'équipe 1
+        if (score.pointsTeam1 === 0) {
+          zeroCountTeam1++;
+        } else {
+          zeroCountTeam1 = 0;
+        }
+        cumulativeTeam1 += score.pointsTeam1;
+        if (cumulativeTeam1 > 50) {
+          cumulativeTeam1 = 25;
+        }
+        if (zeroCountTeam1 >= 3) {
+          cumulativeTeam1 = cumulativeTeam1 >= 25 ? 25 : 0;
+          zeroCountTeam1 = 0;
+        }
+
+        // Calculer les cumuls pour l'équipe 2
+        if (score.pointsTeam2 === 0) {
+          zeroCountTeam2++;
+        } else {
+          zeroCountTeam2 = 0;
+        }
+        cumulativeTeam2 += score.pointsTeam2;
+        if (cumulativeTeam2 > 50) {
+          cumulativeTeam2 = 25;
+        }
+        if (zeroCountTeam2 >= 3) {
+          cumulativeTeam2 = cumulativeTeam2 >= 25 ? 25 : 0;
+          zeroCountTeam2 = 0;
+        }
+
+        return `${index + 1},${score.pointsTeam1},${
+          score.pointsTeam2
+        },${cumulativeTeam1},${cumulativeTeam2}`;
+      })
       .join("\n");
+
     const csvContent = "data:text/csv;charset=utf-8," + headers + rows;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
