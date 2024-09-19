@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ScoreButtons from "./ScoreButtons";
 
 interface ScoreInputProps {
@@ -18,9 +18,16 @@ const ScoreInput: React.FC<ScoreInputProps> = ({
   const [reset, setReset] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  const memoizedOnScoreSelect = useCallback(
+    (selectedPoints: (number | null)[]) => {
+      onScoreSelect(selectedPoints.map((p) => p ?? 0));
+    },
+    [onScoreSelect]
+  );
+
   useEffect(() => {
-    onScoreSelect(points.map((p) => p ?? 0));
-  }, [points, onScoreSelect]);
+    memoizedOnScoreSelect(points);
+  }, [points, memoizedOnScoreSelect]);
 
   const handleAddScores = () => {
     if (points.some((p) => p === null)) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "./App.css";
 import ScoreInput from "./ScoreInput";
 
@@ -31,7 +31,7 @@ const App: React.FC = () => {
     const savedWinner = localStorage.getItem("winner");
     return savedWinner || null;
   });
-  const [tempScores, setTempScores] = useState<number[]>(
+  const [tempScores, setTempScores] = useState<number[]>(() =>
     Array(teamCount).fill(0)
   );
   const [displayTotals, setDisplayTotals] = useState<number[]>(totals);
@@ -55,9 +55,9 @@ const App: React.FC = () => {
     setDisplayTotals(newDisplayTotals);
   }, [tempScores, totals]);
 
-  const handleScoreSelect = (scores: number[]) => {
+  const handleScoreSelect = useCallback((scores: number[]) => {
     setTempScores(scores);
-  };
+  }, []);
 
   const addScores = (points: number[]) => {
     if (winner) return;
@@ -170,7 +170,6 @@ const App: React.FC = () => {
   ) => {
     const newTeamCount = parseInt(event.target.value);
     if (newTeamCount >= 2 && newTeamCount <= 10) {
-      // Limiter à un maximum raisonnable, par exemple 10
       setTeamCount(newTeamCount);
       setTotals(Array(newTeamCount).fill(0));
       setZeroCounts(Array(newTeamCount).fill(0));
