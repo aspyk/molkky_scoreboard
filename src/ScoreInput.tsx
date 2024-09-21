@@ -20,7 +20,7 @@ const ScoreInput: React.FC<ScoreInputProps> = ({
 
   const memoizedOnScoreSelect = useCallback(
     (selectedPoints: (number | null)[]) => {
-      onScoreSelect(selectedPoints.map((p) => p ?? 0));
+      onScoreSelect(selectedPoints.map((p) => p ?? -1));
     },
     [onScoreSelect]
   );

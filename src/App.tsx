@@ -32,7 +32,7 @@ const App: React.FC = () => {
     return savedWinner || null;
   });
   const [tempScores, setTempScores] = useState<number[]>(() =>
-    Array(teamCount).fill(0)
+    Array(teamCount).fill(-1)
   );
   const [displayTotals, setDisplayTotals] = useState<number[]>(totals);
   const [isConfigured, setIsConfigured] = useState(false);
@@ -49,9 +49,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const newDisplayTotals = totals.map((total, index) => {
-      const tempTotal = total + tempScores[index];
-      if (tempTotal > 50) return 25;
-      return tempTotal;
+      if (tempScores[index] === -1) return total;
+      else {
+        const tempTotal = total + tempScores[index];
+        if (tempTotal > 50) return 25;
+        return tempTotal;
+      }
     });
     setDisplayTotals(newDisplayTotals);
   }, [tempScores, totals]);
@@ -81,7 +84,7 @@ const App: React.FC = () => {
     setTotals(newTotals);
     setZeroCounts(newZeroCounts);
     setScores([...scores, { points, colors: newColors }]);
-    setTempScores(Array(teamCount).fill(0)); // Reset temp scores
+    setTempScores(Array(teamCount).fill(-1)); // Reset temp scores
 
     const winningTeam = newTotals.findIndex((total) => total === 50);
     if (winningTeam !== -1) {
@@ -157,11 +160,10 @@ const App: React.FC = () => {
   const resetGame = () => {
     setTeamCount(2); // Remettre à zéro
     setIsConfigured(false); // Revenir à la page de configuration
-
     setScores([]);
     setTotals(Array(teamCount).fill(0));
     setZeroCounts(Array(teamCount).fill(0));
-    setTempScores(Array(teamCount).fill(0));
+    setTempScores(Array(teamCount).fill(-1));
     setWinner(null);
     localStorage.clear();
   };
@@ -171,7 +173,7 @@ const App: React.FC = () => {
       setTeamCount(teamCount);
       setTotals(Array(teamCount).fill(0));
       setZeroCounts(Array(teamCount).fill(0));
-      setTempScores(Array(teamCount).fill(0));
+      setTempScores(Array(teamCount).fill(-1));
     }
   }, [teamCount]);
 
@@ -224,7 +226,7 @@ const App: React.FC = () => {
           {displayTotals.map((total, index) => (
             <p key={index}>
               Équipe {index + 1} : <span className="score">{total}</span>
-              {tempScores[index] > 0 && (
+              {tempScores[index] >= 0 && (
                 <span className="tempScore"> (+{tempScores[index]})</span>
               )}
             </p>
