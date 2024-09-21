@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "./App.css";
 import ScoreInput from "./ScoreInput";
+import { ConfigPage } from "./ConfigPage";
 
 interface Score {
   points: number[];
@@ -12,7 +13,6 @@ const App: React.FC = () => {
     const savedTeamCount = localStorage.getItem("molkkyTeamCount");
     return savedTeamCount ? parseInt(savedTeamCount) : 2;
   });
-  const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [scores, setScores] = useState<Score[]>(() => {
     const savedScores = localStorage.getItem("molkkyScores");
     return savedScores ? JSON.parse(savedScores) : [];
@@ -35,6 +35,7 @@ const App: React.FC = () => {
     Array(teamCount).fill(0)
   );
   const [displayTotals, setDisplayTotals] = useState<number[]>(totals);
+  const [isConfigured, setIsConfigured] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("molkkyTeamCount", teamCount.toString());
@@ -86,8 +87,6 @@ const App: React.FC = () => {
     if (winningTeam !== -1) {
       setWinner(`Équipe ${winningTeam + 1}`);
     }
-
-    setGameStarted(true);
   };
 
   const calculateNewTotal = (
@@ -156,101 +155,93 @@ const App: React.FC = () => {
   };
 
   const resetGame = () => {
+    setTeamCount(2); // Remettre à zéro
+    setIsConfigured(false); // Revenir à la page de configuration
+
     setScores([]);
     setTotals(Array(teamCount).fill(0));
     setZeroCounts(Array(teamCount).fill(0));
     setTempScores(Array(teamCount).fill(0));
     setWinner(null);
-    setGameStarted(false);
     localStorage.clear();
   };
 
-  const handleTeamCountChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const newTeamCount = parseInt(event.target.value);
-    if (newTeamCount >= 2 && newTeamCount <= 10) {
-      setTeamCount(newTeamCount);
-      setTotals(Array(newTeamCount).fill(0));
-      setZeroCounts(Array(newTeamCount).fill(0));
-      setTempScores(Array(newTeamCount).fill(0));
+  useEffect(() => {
+    if (teamCount >= 2 && teamCount <= 10) {
+      setTeamCount(teamCount);
+      setTotals(Array(teamCount).fill(0));
+      setZeroCounts(Array(teamCount).fill(0));
+      setTempScores(Array(teamCount).fill(0));
     }
-  };
+  }, [teamCount]);
 
   return (
     <div className="App">
       <h1>Compteur de points Mölkky</h1>
 
-      <div style={{ marginBottom: "20px" }}>
-        {!gameStarted && (
-          <div>
-            <label htmlFor="teamCount">Nombre d'équipes : </label>
-            <input
-              type="number"
-              id="teamCount"
-              min="2"
-              max="10"
-              value={teamCount}
-              onChange={handleTeamCountChange}
-            />
-          </div>
-        )}
-      </div>
+      {!isConfigured ? (
+        <ConfigPage
+          setNumTeams={setTeamCount}
+          setIsConfigured={setIsConfigured}
+        />
+      ) : (
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>Tour</th>
+                {Array(teamCount)
+                  .fill(0)
+                  .map((_, i) => (
+                    <th key={i}>Points Équipe {i + 1}</th>
+                  ))}
+              </tr>
+            </thead>
+            <tbody>
+              {scores.map((score, index) => (
+                <tr key={index}>
+                  <td>{index + 1}</td>
+                  {score.points.map((points, teamIndex) => (
+                    <td
+                      key={teamIndex}
+                      style={{ backgroundColor: score.colors[teamIndex] }}
+                    >
+                      {points}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Tour</th>
-            {Array(teamCount)
-              .fill(0)
-              .map((_, i) => (
-                <th key={i}>Points Équipe {i + 1}</th>
-              ))}
-          </tr>
-        </thead>
-        <tbody>
-          {scores.map((score, index) => (
-            <tr key={index}>
-              <td>{index + 1}</td>
-              {score.points.map((points, teamIndex) => (
-                <td
-                  key={teamIndex}
-                  style={{ backgroundColor: score.colors[teamIndex] }}
-                >
-                  {points}
-                </td>
-              ))}
-            </tr>
+          <ScoreInput
+            onAddScores={addScores}
+            teamCount={teamCount}
+            onScoreSelect={handleScoreSelect}
+          />
+
+          <h2>Scores cumulés :</h2>
+          {displayTotals.map((total, index) => (
+            <p key={index}>
+              Équipe {index + 1} : <span className="score">{total}</span>
+              {tempScores[index] > 0 && (
+                <span className="tempScore"> (+{tempScores[index]})</span>
+              )}
+            </p>
           ))}
-        </tbody>
-      </table>
 
-      <ScoreInput
-        onAddScores={addScores}
-        teamCount={teamCount}
-        onScoreSelect={handleScoreSelect}
-      />
-
-      <h2>Scores cumulés :</h2>
-      {displayTotals.map((total, index) => (
-        <p key={index}>
-          Équipe {index + 1} : <span className="score">{total}</span>
-          {tempScores[index] > 0 && (
-            <span className="tempScore"> (+{tempScores[index]})</span>
+          {winner && (
+            <h2 style={{ color: "green" }}>
+              Le jeu est terminé ! victoire {winner} !
+            </h2>
           )}
-        </p>
-      ))}
 
-      {winner && (
-        <h2 style={{ color: "green" }}>
-          Le jeu est terminé ! {winner} a gagné !
-        </h2>
+          <button onClick={exportCSV}>Exporter en CSV</button>
+          <button onClick={resetGame} style={{ marginLeft: "10px" }}>
+            Réinitialiser le jeu
+          </button>
+        </>
       )}
-
-      <button onClick={exportCSV}>Exporter en CSV</button>
-      <button onClick={resetGame} style={{ marginLeft: "10px" }}>
-        Réinitialiser le jeu
-      </button>
     </div>
   );
 };
