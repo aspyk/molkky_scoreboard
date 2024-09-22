@@ -4,16 +4,16 @@ import ScoreButtons from "./ScoreButtons";
 interface ScoreInputProps {
   onAddScores: (points: number[]) => void;
   onScoreSelect: (points: number[]) => void;
-  teamCount: number;
+  teams: string[];
 }
 
 const ScoreInput: React.FC<ScoreInputProps> = ({
   onAddScores,
   onScoreSelect,
-  teamCount,
+  teams,
 }) => {
   const [points, setPoints] = useState<(number | null)[]>(
-    Array(teamCount).fill(null)
+    Array(teams.length).fill(null)
   );
   const [reset, setReset] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -38,7 +38,7 @@ const ScoreInput: React.FC<ScoreInputProps> = ({
     }
 
     onAddScores(points as number[]);
-    setPoints(Array(teamCount).fill(null));
+    setPoints(Array(teams.length).fill(null));
     setReset(true);
     setErrorMessage("");
   };
@@ -53,17 +53,15 @@ const ScoreInput: React.FC<ScoreInputProps> = ({
   return (
     <div>
       <p>Sélectionner les points de ce tour :</p>
-      {Array(teamCount)
-        .fill(0)
-        .map((_, index) => (
-          <div key={index}>
-            <p>Équipe {index + 1} :</p>
-            <ScoreButtons
-              onSelect={(score) => handleSelect(score, index)}
-              reset={reset}
-            />
-          </div>
-        ))}
+      {teams.map((team, index) => (
+        <div key={index}>
+          <p>{team} :</p>
+          <ScoreButtons
+            onSelect={(score) => handleSelect(score, index)}
+            reset={reset}
+          />
+        </div>
+      ))}
       <button onClick={handleAddScores}>Ajouter</button>
       {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
     </div>

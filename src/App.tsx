@@ -9,9 +9,9 @@ interface Score {
 }
 
 const App: React.FC = () => {
-  const [teamCount, setTeamCount] = useState<number>(() => {
-    const savedTeamCount = localStorage.getItem("molkkyTeamCount");
-    return savedTeamCount ? parseInt(savedTeamCount) : 2;
+  const [teams, setTeams] = useState<string[]>(() => {
+    const savedTeams = localStorage.getItem("molkkyTeams");
+    return savedTeams ? JSON.parse(savedTeams) : ["Équipe 1", "Équipe 2"];
   });
   const [scores, setScores] = useState<Score[]>(() => {
     const savedScores = localStorage.getItem("molkkyScores");
@@ -19,33 +19,40 @@ const App: React.FC = () => {
   });
   const [totals, setTotals] = useState<number[]>(() => {
     const savedTotals = localStorage.getItem("molkkyTotals");
-    return savedTotals ? JSON.parse(savedTotals) : Array(teamCount).fill(0);
+    return savedTotals ? JSON.parse(savedTotals) : Array(teams.length).fill(0);
   });
   const [zeroCounts, setZeroCounts] = useState<number[]>(() => {
     const savedZeroCounts = localStorage.getItem("molkkyZeroCounts");
     return savedZeroCounts
       ? JSON.parse(savedZeroCounts)
-      : Array(teamCount).fill(0);
+      : Array(teams.length).fill(0);
   });
   const [winner, setWinner] = useState<string | null>(() => {
     const savedWinner = localStorage.getItem("winner");
     return savedWinner || null;
   });
   const [tempScores, setTempScores] = useState<number[]>(() =>
-    Array(teamCount).fill(-1)
+    Array(teams.length).fill(-1)
   );
   const [displayTotals, setDisplayTotals] = useState<number[]>(totals);
   const [isConfigured, setIsConfigured] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem("molkkyTeamCount", teamCount.toString());
+    localStorage.setItem("molkkyTeams", JSON.stringify(teams));
     localStorage.setItem("molkkyScores", JSON.stringify(scores));
     localStorage.setItem("molkkyTotals", JSON.stringify(totals));
     localStorage.setItem("molkkyZeroCounts", JSON.stringify(zeroCounts));
     if (winner) {
       localStorage.setItem("winner", winner);
     }
-  }, [teamCount, scores, totals, zeroCounts, winner]);
+  }, [teams, scores, totals, zeroCounts, winner]);
+
+  useEffect(() => {
+    setTotals(Array(teams.length).fill(0));
+    setZeroCounts(Array(teams.length).fill(0));
+    setTempScores(Array(teams.length).fill(-1));
+    setDisplayTotals(Array(teams.length).fill(0));
+  }, [teams]);
 
   useEffect(() => {
     const newDisplayTotals = totals.map((total, index) => {
@@ -84,11 +91,11 @@ const App: React.FC = () => {
     setTotals(newTotals);
     setZeroCounts(newZeroCounts);
     setScores([...scores, { points, colors: newColors }]);
-    setTempScores(Array(teamCount).fill(-1)); // Reset temp scores
+    setTempScores(Array(teams.length).fill(-1)); // Reset temp scores
 
-    const winningTeam = newTotals.findIndex((total) => total === 50);
-    if (winningTeam !== -1) {
-      setWinner(`Équipe ${winningTeam + 1}`);
+    const winningTeamIndex = newTotals.findIndex((total) => total === 50);
+    if (winningTeamIndex !== -1) {
+      setWinner(teams[winningTeamIndex]);
     }
   };
 
@@ -128,12 +135,8 @@ const App: React.FC = () => {
     const headers =
       [
         "Tour",
-        ...Array(teamCount)
-          .fill(0)
-          .map((_, i) => `Points Équipe ${i + 1}`),
-        ...Array(teamCount)
-          .fill(0)
-          .map((_, i) => `Cumul Équipe ${i + 1}`),
+        ...teams.map((team) => `Points ${team}`),
+        ...teams.map((team) => `Cumul ${team}`),
       ].join(",") + "\n";
 
     const rows = scores
@@ -158,45 +161,31 @@ const App: React.FC = () => {
   };
 
   const resetGame = () => {
-    setTeamCount(2); // Remettre à zéro
-    setIsConfigured(false); // Revenir à la page de configuration
+    setTeams(["Équipe 1", "Équipe 2"]);
+    setIsConfigured(false);
     setScores([]);
-    setTotals(Array(teamCount).fill(0));
-    setZeroCounts(Array(teamCount).fill(0));
-    setTempScores(Array(teamCount).fill(-1));
+    setTotals(Array(2).fill(0));
+    setZeroCounts(Array(2).fill(0));
+    setTempScores(Array(2).fill(-1));
     setWinner(null);
     localStorage.clear();
   };
-
-  useEffect(() => {
-    if (teamCount >= 2 && teamCount <= 10) {
-      setTeamCount(teamCount);
-      setTotals(Array(teamCount).fill(0));
-      setZeroCounts(Array(teamCount).fill(0));
-      setTempScores(Array(teamCount).fill(-1));
-    }
-  }, [teamCount]);
 
   return (
     <div className="App">
       <h1>Compteur de points Mölkky</h1>
 
       {!isConfigured ? (
-        <ConfigPage
-          setNumTeams={setTeamCount}
-          setIsConfigured={setIsConfigured}
-        />
+        <ConfigPage setTeams={setTeams} setIsConfigured={setIsConfigured} />
       ) : (
         <>
           <table>
             <thead>
               <tr>
                 <th>Tour</th>
-                {Array(teamCount)
-                  .fill(0)
-                  .map((_, i) => (
-                    <th key={i}>Points Équipe {i + 1}</th>
-                  ))}
+                {teams.map((team, i) => (
+                  <th key={i}>Points {team}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -218,14 +207,14 @@ const App: React.FC = () => {
 
           <ScoreInput
             onAddScores={addScores}
-            teamCount={teamCount}
+            teams={teams}
             onScoreSelect={handleScoreSelect}
           />
 
           <h2>Scores cumulés :</h2>
           {displayTotals.map((total, index) => (
             <p key={index}>
-              Équipe {index + 1} : <span className="score">{total}</span>
+              {teams[index]} : <span className="score">{total}</span>
               {tempScores[index] >= 0 && (
                 <span className="tempScore"> (+{tempScores[index]})</span>
               )}
@@ -234,7 +223,7 @@ const App: React.FC = () => {
 
           {winner && (
             <h2 style={{ color: "green" }}>
-              Le jeu est terminé ! victoire {winner} !
+              Le jeu est terminé ! Victoire de {winner} !
             </h2>
           )}
 
