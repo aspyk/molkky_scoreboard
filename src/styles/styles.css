@@ -1,0 +1,13 @@
+/* styles.css */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Supprimer les flèches de l'input number sur Chrome, Safari, Edge */
+input[type="number"] {
+  appearance: textfield; /* Propriété standard */
+  -webkit-appearance: none; /* Propriété spécifique à WebKit */
+  -moz-appearance: textfield; /* Propriété spécifique à Firefox */
+}
