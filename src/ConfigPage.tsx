@@ -107,6 +107,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
             type="text"
             value={name}
             onChange={(e) => handleTeamNameChange(index, e.target.value)}
+            onFocus={(event) => event.target.select()}
           />
         </div>
       ))}
