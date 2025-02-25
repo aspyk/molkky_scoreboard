@@ -1,46 +1,35 @@
-# Getting Started with Create React App
+# 🎯 Mollky scoreboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A simple web application for tracking Mölkky game scores. It supports multiple teams, enforces official game rules, and persists scores using local storage.
 
-## Available Scripts
+## ✨ Features
 
-In the project directory, you can run:
+- Add and track scores for any number of teams
+- Enforce Mölkky rules:
+  -If a team exceeds 50 points, it drops back to 25
+  - If a team scores zero 3 times in a row, they drop to 25 (if ≥25) or 0 (otherwise)
+- Interactive number selection (1-12) with button-based input
+- Real-time cumulative score updates
+- Highlighting important events:
+  - Green when reaching exactly 50 (winning condition)
+  - Red when score resets to 25 or 0 due to penalties
+- Local storage support to retain scores after page reload
+- Reset button to clear all scores and start fresh
+- CSV export for saving game history
 
-### `npm start`
+## 🚀 Usage
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+1. Start the app
+1. Select the number of teams and add their names
+1. Click 1-12 to select a score for each team
+1. Click "Add Score" to update the scoreboard
+1. Keep playing until a team reaches 50! 🎉
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## 📦 Local installation
 
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+# clone the repo
+cd molkkky-scoreboard
+npm install
+npm start
+```
